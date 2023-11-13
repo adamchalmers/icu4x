@@ -106,6 +106,33 @@ fn btree_map() {
     );
 }
 
+impl<K, V> Bake for std::collections::HashMap<K, V>
+where
+    K: Bake,
+    V: Bake,
+{
+    fn bake(&self, ctx: &CrateEnv) -> TokenStream {
+        ctx.insert("std");
+        let data = self.iter().map(|(k, v)| {
+            let k = k.bake(ctx);
+            let v = v.bake(ctx);
+            quote!((#k, #v))
+        });
+        quote! {
+            std::collections::HashMap::from([#(#data),*])
+        }
+    }
+}
+
+#[test]
+fn hashmap() {
+    test_bake!(
+        std::collections::HashMap<u8, u8>,
+        std::collections::HashMap::from([(1u8, 2u8), (2u8, 4u8)]),
+        std
+    );
+}
+
 impl Bake for String {
     fn bake(&self, _: &CrateEnv) -> TokenStream {
         quote! {
